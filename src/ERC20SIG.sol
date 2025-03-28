@@ -6,7 +6,8 @@ import "lib/openzeppelin-contracts/contracts/access/Ownable.sol";
 
 contract LumiToken is ERC20, Ownable {
 
-    mapping(bytes => bool) public usedSignatures;
+    mapping(uint256 => bool) public usedNonces;
+
     event Mint(address indexed to, uint256 value);
     constructor() ERC20("LumiToken", "LTK") Ownable(msg.sender) {}
 
@@ -16,17 +17,19 @@ contract LumiToken is ERC20, Ownable {
     }
 
     function mintWithSignature( address to, uint256 amount, uint256 nonce, bytes memory signature) external {
-        require(!usedSignatures[signature], "Signature already used");
+         require(!usedNonces[nonce], "Nonce already used");
 
         // Hash the transaction data to create a unique message
         bytes32 messageHash = keccak256(abi.encodePacked(to, amount, nonce, address(this)));
 
+        bytes32 ethSignedMessageHash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", messageHash));
+
         // Recover the signer address from the signature
-        address signer = recoverSigner(messageHash, signature);
+        address signer = recoverSigner(ethSignedMessageHash, signature);
 
         require(signer == owner(), "Invalid signature");
         
-        usedSignatures[signature] = true;
+        usedNonces[nonce] = true;
 
         _mint(to, amount);
         emit Mint(to, amount);
@@ -34,12 +37,12 @@ contract LumiToken is ERC20, Ownable {
 
      // Helper function to recover the signer address from a signature
     function recoverSigner(bytes32 ethSignedMessageHash, bytes memory signature) internal pure returns (address) {
-        (uint8 v, bytes32 r, bytes32 s) = splitSignature(signature);
+        ( bytes32 r, bytes32 s, uint8 v) = splitSignature(signature);
         return ecrecover(ethSignedMessageHash, v, r, s);
     }
 
     // Function to split the signature into its components (v, r, s)
-    function splitSignature(bytes memory signature) internal pure returns (uint8 v, bytes32 r, bytes32 s) {
+    function splitSignature(bytes memory signature) internal pure returns (bytes32 r, bytes32 s, uint8 v) {
         require(signature.length == 65, "invalid signature length");
 
         assembly {
@@ -49,7 +52,7 @@ contract LumiToken is ERC20, Ownable {
         }
     }
     // Helper function to create a valid mint signature (to be signed off-chain by the owner)
-    function createMintSignature(address to, uint256 amount, uint256 nonce) external onlyOwner view returns (bytes32) {
+    function createMintSignature(address to, uint256 amount, uint256 nonce) external view returns (bytes32) {
         
         bytes32 messageHash = keccak256(abi.encodePacked(to, amount, nonce, address(this)));
         
