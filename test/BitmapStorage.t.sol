@@ -22,7 +22,7 @@ contract BitmapStorageTest is Test {
     function testStoreByte() public {
         // Store a byte in slot 5 with value 42
         bitmapStorage.storeByte(5, 42);
-        
+
         // Retrieve the byte and check it matches
         uint8 retrievedValue = bitmapStorage.getByteFromSlot(5);
         assertEq(retrievedValue, 42, "Retrieved value should match stored value");

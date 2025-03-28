@@ -26,23 +26,15 @@ contract ERC20SIGTest is Test {
         uint256 amount = 1000 * 10 ** 18;
         uint256 nonce = 1;
 
-        bytes32 messageHash = keccak256(
-            abi.encodePacked(user, amount, nonce, address(token))
-        );
-        bytes32 ethSignedMessageHash = keccak256(
-            abi.encodePacked("\x19Ethereum Signed Message:\n32", messageHash)
-        );
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKeyOwner, ethSignedMessageHash );
-        bytes memory signature = abi.encodePacked(r, s, v); 
+        bytes32 messageHash = keccak256(abi.encodePacked(user, amount, nonce, address(token)));
+        bytes32 ethSignedMessageHash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", messageHash));
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKeyOwner, ethSignedMessageHash);
+        bytes memory signature = abi.encodePacked(r, s, v);
 
         vm.prank(user);
         token.mintWithSignature(user, amount, nonce, signature);
 
-        assertEq(
-            token.balanceOf(user),
-            amount,
-            "Minting with valid signature failed"
-        );
+        assertEq(token.balanceOf(user), amount, "Minting with valid signature failed");
     }
 
     function testMintWithSignature_InvalidSigner() public {
@@ -53,9 +45,9 @@ contract ERC20SIGTest is Test {
         uint256 amount = 1000 * 10 ** 18;
         uint256 nonce = 1;
 
-        bytes32 messageHash = keccak256( abi.encodePacked(user, amount, nonce, address(token)));
+        bytes32 messageHash = keccak256(abi.encodePacked(user, amount, nonce, address(token)));
         bytes32 ethSignedMessageHash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", messageHash));
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign( privateKeyAttacker, ethSignedMessageHash);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKeyAttacker, ethSignedMessageHash);
         bytes memory signature = abi.encodePacked(r, s, v); // Consistent order
 
         vm.prank(user);
